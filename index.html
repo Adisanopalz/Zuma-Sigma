@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Web Zuma Ultimate - Responsif HP & PC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { overscroll-behavior: none; touch-action: none; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .glass-panel { background: rgba(31, 41, 55, 0.85); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white overflow-hidden select-none">
+
+    <!-- UI Overlay: Top Bar -->
+    <div class="absolute top-0 left-0 w-full p-4 flex justify-between pointer-events-none z-10 text-shadow-md">
+        <div class="flex flex-col">
+            <div class="text-xl md:text-3xl font-extrabold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                SKOR: <span id="scoreText" class="text-yellow-400">0</span>
+            </div>
+            <div class="text-lg md:text-2xl font-bold text-gray-300 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                LEVEL: <span id="levelText" class="text-green-400">1</span>
+            </div>
+        </div>
+        <div class="flex gap-4 pointer-events-auto">
+            <button onclick="window.toggleMute()" class="text-2xl md:text-3xl bg-gray-800/80 p-2 rounded-full border border-gray-600 hover:bg-gray-700 transition">
+                <span id="muteIcon">🔊</span>
+            </button>
+            <button onclick="window.pauseGame()" id="pauseBtn" class="hidden text-2xl md:text-3xl bg-gray-800/80 p-2 rounded-full border border-gray-600 hover:bg-gray-700 transition">
+                ⏸️
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Main Menu -->
+    <div id="mainMenuModal" class="absolute inset-0 flex items-center justify-center bg-black/90 z-30 transition-opacity">
+        <div class="glass-panel p-8 rounded-3xl shadow-[0_0_40px_rgba(0,0,0,1)] text-center border border-gray-600 max-w-sm w-full mx-4 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-500 rounded-full mix-blend-multiply filter blur-2xl opacity-50 animate-pulse"></div>
+            <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-red-500 rounded-full mix-blend-multiply filter blur-2xl opacity-50 animate-pulse"></div>
+            
+            <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 via-orange-500 to-red-600 mb-2 drop-shadow-lg relative z-10">ZUMA</h1>
+            <p class="text-gray-400 text-sm tracking-widest mb-6 relative z-10">ULTIMATE EDITION</p>
+            
+            <div class="bg-gray-900/50 rounded-xl p-4 mb-6 border border-gray-700 relative z-10">
+                <p class="text-sm text-gray-400">SKOR TERTINGGI</p>
+                <p class="text-2xl font-bold text-yellow-400" id="highScoreText">0</p>
+                <p class="text-sm text-gray-400 mt-2">LEVEL TERTINGGI</p>
+                <p class="text-xl font-bold text-green-400" id="highLevelText">1</p>
+            </div>
+
+            <button onclick="window.startNewGame()" class="relative z-10 w-full bg-gradient-to-r from-green-400 to-emerald-600 hover:from-green-500 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-full transform transition hover:scale-105 active:scale-95 text-xl shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                MAIN SEKARANG
+            </button>
+            
+            <div class="mt-4 text-xs text-gray-500 relative z-10">Cocokkan 3 warna. Hancurkan bola spesial untuk efek!</div>
+        </div>
+    </div>
+
+    <!-- Modal Pause -->
+    <div id="pauseModal" class="hidden absolute inset-0 flex items-center justify-center bg-black/80 z-40 transition-opacity">
+        <div class="glass-panel p-8 rounded-2xl shadow-2xl text-center border border-blue-500 max-w-xs w-full mx-4">
+            <h1 class="text-4xl font-bold text-blue-400 mb-6 tracking-widest">PAUSED</h1>
+            <button onclick="window.resumeGame()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-full mb-4 transform transition hover:scale-105 active:scale-95 text-lg">
+                LANJUTKAN
+            </button>
+            <button onclick="window.quitToMenu()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-full transform transition hover:scale-105 active:scale-95 text-lg">
+                KEMBALI KE MENU
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Game Over -->
+    <div id="gameOverModal" class="hidden absolute inset-0 flex items-center justify-center bg-red-900/90 z-20 transition-opacity">
+        <div class="glass-panel p-8 rounded-2xl shadow-2xl text-center border-2 border-red-500 max-w-sm w-full mx-4">
+            <h1 class="text-4xl font-bold text-red-500 mb-2">GAME OVER</h1>
+            <p class="text-gray-300 mb-6">Skor Akhir: <span id="finalScoreText" class="font-bold text-yellow-400">0</span></p>
+            <button onclick="window.quitToMenu()" class="w-full bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-bold py-3 px-6 rounded-full transform transition hover:scale-105 active:scale-95 text-xl">
+                MENU UTAMA
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Level Selesai (Menang) -->
+    <div id="winModal" class="hidden absolute inset-0 flex items-center justify-center bg-green-900/90 z-20 transition-opacity">
+        <div class="glass-panel p-8 rounded-2xl shadow-2xl text-center border-2 border-green-500 max-w-sm w-full mx-4">
+            <h1 class="text-4xl font-bold text-green-400 mb-2">LEVEL <span id="winLevelText">1</span> SELESAI!</h1>
+            <p class="text-gray-300 mb-6">Bersiaplah, kereta akan melaju lebih cepat!</p>
+            <button onclick="window.nextLevel()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 px-6 rounded-full transform transition hover:scale-105 active:scale-95 text-xl shadow-[0_0_20px_rgba(59,130,246,0.5)]">
+                LANJUT LEVEL <span id="nextLevelText">2</span>
+            </button>
+            <button onclick="window.quitToMenu()" class="mt-4 text-sm text-gray-400 hover:text-white underline">Kembali ke Menu</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script type="module">
+        // --- FIREBASE CLOUD SAVE SETUP ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let cloudHighestScore = 0;
+        let cloudHighestLevel = 1;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'zuma-ultimate-web';
+
+        async function initFirebase() {
+            try {
+                const firebaseConfig = typeof __firebase_config !== 'undefined' && __firebase_config ? JSON.parse(__firebase_config) : null;
+                if (!firebaseConfig) return; // Skip if no config provided
+
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        currentUser = user;
+                        // Ambil data progres tersimpan
+                        try {
+                            const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'progress', 'savedata');
+                            const snap = await getDoc(docRef);
+                            if (snap.exists()) {
+                                cloudHighestScore = snap.data().highestScore || 0;
+                                cloudHighestLevel = snap.data().highestLevel || 1;
+                                document.getElementById('highScoreText').innerText = cloudHighestScore;
+                                document.getElementById('highLevelText').innerText = cloudHighestLevel;
+                            }
+                        } catch(e) { console.warn("Gagal mengambil data save:", e); }
+                    }
+                });
+            } catch (e) { console.warn("Firebase tidak diinisialisasi, game tetap berjalan lokal.", e); }
+        }
+        initFirebase();
+
+        async function saveProgressCloud() {
+            if (!currentUser || !db) return;
+            let updated = false;
+            if (score > cloudHighestScore) { cloudHighestScore = score; updated = true; }
+            if (level > cloudHighestLevel) { cloudHighestLevel = level; updated = true; }
+            
+            if (updated) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'progress', 'savedata');
+                    await setDoc(docRef, { highestScore: cloudHighestScore, highestLevel: cloudHighestLevel }, { merge: true });
+                    document.getElementById('highScoreText').innerText = cloudHighestScore;
+                    document.getElementById('highLevelText').innerText = cloudHighestLevel;
+                } catch(e) { console.warn("Gagal menyimpan ke cloud.", e); }
+            }
+        }
+
+        // --- ENGINE GAME ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const pathCanvas = document.createElement('canvas');
+        const pathCtx = pathCanvas.getContext('2d');
+        const ballCanvases = {};
+
+        // --- AUDIO SYSTEM ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        let isMuted = false;
+        let bgmInterval = null;
+        let bgmTick = 0;
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('muteIcon').innerText = isMuted ? '🔇' : '🔊';
+            if (audioCtx.state === 'suspended' && !isMuted) audioCtx.resume();
+        }
+        window.toggleMute = toggleMute; // Expose ke HTML
+
+        function playSound(type, volMultiplier = 1) {
+            if (isMuted) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            
+            if (type === 'shoot') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                gain.gain.setValueAtTime(0.2 * volMultiplier, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'match') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.3 * volMultiplier, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'combo') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.linearRampToValueAtTime(1200, now + 0.15);
+                gain.gain.setValueAtTime(0.2 * volMultiplier, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'bomb') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.exponentialRampToValueAtTime(20, now + 0.3);
+                gain.gain.setValueAtTime(0.5 * volMultiplier, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'powerup') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1000, now);
+                osc.frequency.linearRampToValueAtTime(1500, now + 0.2);
+                osc.frequency.linearRampToValueAtTime(1000, now + 0.4);
+                gain.gain.setValueAtTime(0.3 * volMultiplier, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'tom') { // Drum BGM
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
+                gain.gain.setValueAtTime(0.15 * volMultiplier, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'over') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(50, now + 1.5);
+                gain.gain.setValueAtTime(0.4 * volMultiplier, now);
+                gain.gain.linearRampToValueAtTime(0, now + 1.5);
+                osc.start(now); osc.stop(now + 1.5);
+            }
+        }
+
+        function startBGM() {
+            if (bgmInterval) clearInterval(bgmInterval);
+            bgmInterval = setInterval(() => {
+                if (state === 'PLAY' && !isMuted) {
+                    playSound('tom', bgmTick % 4 === 0 ? 1 : 0.4);
+                    bgmTick++;
+                }
+            }, 600); // 100 BPM pulse
+        }
+
+        // Variabel Game Utama
+        let state = 'MENU'; // 'MENU', 'PLAY', 'PAUSED', 'OVER', 'WIN'
+        let width, height, cx, cy;
+        let ballRadius = 15;
+        let pathPoints = [];
+        let totalPathDist = 0;
+        
+        let score = 0;
+        let level = 1;
+        let baseSpeed = 1;
+        let comboMultiplier = 1;
+        
+        let balls = []; 
+        let bullets = []; 
+        let particles = []; 
+        let floatingTexts = []; 
+        let ballsToSpawn = 30; 
+        let muzzleFlash = 0; // Tambahan: Timer efek kilat tembakan
+        
+        // Power-ups state
+        const POWERUPS = ['bomb', 'slow', 'reverse', 'lightning']; // Tambahan: Powerup Petir (Lightning)
+        let activeEffects = { slowTimer: 0, reverseTimer: 0 };
+
+        const colors = ['#ef4444', '#22c55e', '#3b82f6', '#eab308', '#a855f7'];
+        let activeColors = 3;
+        
+        let shooterAngle = 0;
+        let currentBulletColor = '';
+        let nextBulletColor = '';
+        let matchQueue = new Set();
+
+        // --- SISTEM TATA LENGKAP & RENDERING ---
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            cx = width / 2;
+            cy = height / 2;
+            
+            ballRadius = Math.max(12, Math.min(width, height) * 0.025);
+            
+            let oldTotalDist = totalPathDist;
+            generatePath();
+            preRenderPath();
+            preRenderBalls();
+            
+            if (oldTotalDist > 0 && balls.length > 0) {
+                let ratio = totalPathDist / oldTotalDist;
+                for (let b of balls) {
+                    b.dist *= ratio;
+                    let p = getPosOnPath(b.dist);
+                    b.x = p.x; b.y = p.y;
+                }
+            }
+        }
+        window.addEventListener('resize', resize);
+
+        function preRenderPath() {
+            pathCanvas.width = width;
+            pathCanvas.height = height;
+            pathCtx.clearRect(0, 0, width, height);
+            if (pathPoints.length === 0) return;
+
+            pathCtx.beginPath();
+            pathCtx.moveTo(pathPoints[0].x, pathPoints[0].y);
+            for (let p of pathPoints) pathCtx.lineTo(p.x, p.y);
+            
+            pathCtx.strokeStyle = '#374151'; 
+            pathCtx.lineWidth = ballRadius * 2 + 6;
+            pathCtx.lineCap = 'round';
+            pathCtx.lineJoin = 'round';
+            pathCtx.stroke();
+            
+            pathCtx.strokeStyle = '#1f2937';
+            pathCtx.lineWidth = ballRadius * 2 - 2;
+            pathCtx.stroke();
+
+            let endP = pathPoints[pathPoints.length - 1];
+            pathCtx.beginPath();
+            pathCtx.arc(endP.x, endP.y, ballRadius * 1.8, 0, Math.PI * 2);
+            let radGrad = pathCtx.createRadialGradient(endP.x, endP.y, 0, endP.x, endP.y, ballRadius * 1.8);
+            radGrad.addColorStop(0, '#000000');
+            radGrad.addColorStop(1, '#111827');
+            pathCtx.fillStyle = radGrad;
+            pathCtx.fill();
+            pathCtx.strokeStyle = '#7f1d1d';
+            pathCtx.lineWidth = 4;
+            pathCtx.stroke();
+        }
+
+        function preRenderBalls() {
+            let size = ballRadius * 2 + 4;
+            let r = ballRadius;
+            let center = size / 2;
+            
+            // Loop setiap warna, dan setiap kombinasi powerup
+            const variations = [null, ...POWERUPS];
+
+            for (let c of colors) {
+                for (let pu of variations) {
+                    let bc = document.createElement('canvas');
+                    bc.width = size; bc.height = size;
+                    let bctx = bc.getContext('2d');
+
+                    // Base ball
+                    bctx.beginPath();
+                    bctx.arc(center, center, r, 0, Math.PI * 2);
+                    bctx.fillStyle = c;
+                    bctx.fill();
+                    
+                    bctx.beginPath();
+                    bctx.arc(center - r * 0.3, center - r * 0.3, r * 0.35, 0, Math.PI * 2);
+                    bctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                    bctx.fill();
+                    
+                    bctx.beginPath();
+                    bctx.arc(center, center, r, 0, Math.PI * 2);
+                    bctx.strokeStyle = 'rgba(0,0,0,0.6)';
+                    bctx.lineWidth = 2;
+                    bctx.stroke();
+
+                    // Draw Powerup Icon on Top (Lebih Rapi & Jelas)
+                    if (pu) {
+                        bctx.save();
+                        bctx.translate(center, center);
+                        if (pu === 'bomb') {
+                            bctx.beginPath(); bctx.arc(0, 0, r * 0.55, 0, Math.PI * 2); bctx.fillStyle = '#222'; bctx.fill();
+                            bctx.beginPath(); bctx.arc(0, 0, r * 0.2, 0, Math.PI * 2); bctx.fillStyle = '#ef4444'; bctx.fill();
+                            bctx.strokeStyle = '#facc15'; bctx.lineWidth = 2;
+                            bctx.beginPath(); bctx.moveTo(0, -r*0.5); bctx.lineTo(r*0.3, -r*0.8); bctx.stroke(); // Sumbu
+                        } else if (pu === 'slow') {
+                            bctx.beginPath(); bctx.arc(0, 0, r * 0.5, 0, Math.PI * 2); bctx.fillStyle = '#22d3ee'; bctx.fill();
+                            bctx.fillStyle = '#fff';
+                            bctx.fillRect(-r*0.4, -r*0.1, r*0.8, r*0.2); // Salib Salju
+                            bctx.fillRect(-r*0.1, -r*0.4, r*0.2, r*0.8);
+                        } else if (pu === 'reverse') {
+                            bctx.beginPath(); bctx.arc(0, 0, r * 0.5, 0, Math.PI * 2); bctx.fillStyle = '#facc15'; bctx.fill();
+                            bctx.fillStyle = '#000';
+                            bctx.beginPath(); bctx.moveTo(r*0.1, -r*0.3); bctx.lineTo(-r*0.3, 0); bctx.lineTo(r*0.1, r*0.3); bctx.fill();
+                            bctx.beginPath(); bctx.moveTo(r*0.4, -r*0.3); bctx.lineTo(0, 0); bctx.lineTo(r*0.4, r*0.3); bctx.fill();
+                        } else if (pu === 'lightning') {
+                            bctx.beginPath(); bctx.arc(0, 0, r * 0.5, 0, Math.PI * 2); bctx.fillStyle = '#a855f7'; bctx.fill();
+                            bctx.fillStyle = '#fef08a'; // Petir
+                            bctx.beginPath(); bctx.moveTo(r*0.1, -r*0.4); bctx.lineTo(-r*0.2, 0); bctx.lineTo(r*0.2, 0); bctx.lineTo(-r*0.1, r*0.4); bctx.lineTo(r*0.1, 0); bctx.lineTo(-r*0.1, 0); bctx.fill();
+                        }
+                        bctx.restore();
+                    }
+
+                    let key = c + (pu ? '_' + pu : '');
+                    ballCanvases[key] = bc;
+                }
+            }
+        }
+
+        function generatePath() {
+            pathPoints = [];
+            totalPathDist = 0;
+            const maxR = Math.min(cx, cy) * 0.95;
+            const minR = ballRadius * 3.5;
+            const turns = 3.5;
+            
+            let prev = null;
+            for (let t = 0; t <= 1; t += 0.001) {
+                let angle = t * Math.PI * 2 * turns;
+                let r = maxR - t * (maxR - minR);
+                let x = cx + Math.cos(angle) * r;
+                let y = cy + Math.sin(angle) * r;
+                
+                if (prev) totalPathDist += Math.hypot(x - prev.x, y - prev.y);
+                pathPoints.push({ x, y, dist: totalPathDist });
+                prev = { x, y };
+            }
+        }
+
+        // --- MANAJEMEN STATE & UI ---
+        function getValidColor() {
+            let availableColors = colors.slice(0, activeColors);
+            if (balls.length > 0 && ballsToSpawn === 0) {
+                const colorsOnBoard = [...new Set(balls.map(b => b.color))];
+                if (colorsOnBoard.length > 0) {
+                    return colorsOnBoard[Math.floor(Math.random() * colorsOnBoard.length)];
+                }
+            }
+            return availableColors[Math.floor(Math.random() * availableColors.length)];
+        }
+
+        window.startNewGame = () => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            level = 1;
+            score = 0;
+            updateUI();
+            initLevel();
+            document.getElementById('mainMenuModal').classList.add('hidden');
+            document.getElementById('gameOverModal').classList.add('hidden');
+            startBGM();
+        };
+
+        window.nextLevel = () => {
+            level++;
+            updateUI();
+            initLevel();
+            document.getElementById('winModal').classList.add('hidden');
+        };
+
+        window.pauseGame = () => {
+            if (state !== 'PLAY') return;
+            state = 'PAUSED';
+            document.getElementById('pauseBtn').classList.add('hidden');
+            document.getElementById('pauseModal').classList.remove('hidden');
+        };
+
+        window.resumeGame = () => {
+            state = 'PLAY';
+            document.getElementById('pauseModal').classList.add('hidden');
+            document.getElementById('pauseBtn').classList.remove('hidden');
+        };
+
+        window.quitToMenu = () => {
+            state = 'MENU';
+            document.getElementById('pauseModal').classList.add('hidden');
+            document.getElementById('gameOverModal').classList.add('hidden');
+            document.getElementById('winModal').classList.add('hidden');
+            document.getElementById('pauseBtn').classList.add('hidden');
+            document.getElementById('mainMenuModal').classList.remove('hidden');
+        };
+
+        function initLevel() {
+            balls = [];
+            bullets = [];
+            particles = [];
+            floatingTexts = [];
+            comboMultiplier = 1;
+            activeEffects = { slowTimer: 0, reverseTimer: 0 };
+            
+            activeColors = Math.min(colors.length, 2 + Math.floor(level / 3)); // 3 colors max until lvl 3
+            ballsToSpawn = 30 + (level * 15);
+            baseSpeed = 0.8 + (level * 0.15); // Increase progressively
+            
+            currentBulletColor = getValidColor();
+            nextBulletColor = getValidColor();
+            
+            state = 'PLAY';
+            document.getElementById('pauseBtn').classList.remove('hidden');
+        }
+
+        function updateUI() {
+            document.getElementById('scoreText').innerText = score;
+            document.getElementById('levelText').innerText = level;
+            document.getElementById('nextLevelText').innerText = level + 1;
+            document.getElementById('winLevelText').innerText = level;
+            document.getElementById('finalScoreText').innerText = score;
+        }
+
+        // --- LOGIKA GAMEPLAY & POWERUPS ---
+        function getPosOnPath(dist) {
+            if (dist <= 0) return pathPoints[0];
+            if (dist >= totalPathDist) return pathPoints[pathPoints.length - 1];
+            let l = 0, r = pathPoints.length - 1;
+            while (l <= r) {
+                let m = (l + r) >> 1;
+                if (pathPoints[m].dist < dist) l = m + 1;
+                else if (pathPoints[m].dist > dist) r = m - 1;
+                else return pathPoints[m];
+            }
+            let p1 = pathPoints[r], p2 = pathPoints[l];
+            if (!p1) return p2; if (!p2) return p1;
+            let t = (dist - p1.dist) / (p2.dist - p1.dist);
+            return { x: p1.x + t * (p2.x - p1.x), y: p1.y + t * (p2.y - p1.y) };
+        }
+
+        function getApproxPathDist(x, y) {
+            let minD = Infinity; let bestDist = 0;
+            for (let i = 0; i < pathPoints.length; i += 5) {
+                let d = Math.hypot(x - pathPoints[i].x, y - pathPoints[i].y);
+                if (d < minD) { minD = d; bestDist = pathPoints[i].dist; }
+            }
+            return bestDist;
+        }
+
+        function spawnParticles(x, y, color, amount = 10, speedMult = 1) {
+            for (let i = 0; i < amount; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 8 * speedMult,
+                    vy: (Math.random() - 0.5) * 8 * speedMult,
+                    life: 1.0,
+                    color: color
+                });
+            }
+        }
+
+        function spawnFloatingText(x, y, text, color) {
+            floatingTexts.push({ x: x, y: y, text: text, color: color, life: 1.0 });
+        }
+
+        function triggerPowerup(pu, x, y) {
+            if (!pu) return;
+            playSound('powerup');
+            if (pu === 'slow') {
+                activeEffects.slowTimer = 300; // ~5 seconds at 60fps
+                spawnFloatingText(x, y, "FROST!", "#22d3ee");
+            } else if (pu === 'reverse') {
+                activeEffects.reverseTimer = 120; // ~2 seconds
+                spawnFloatingText(x, y, "MUNDUR!", "#facc15");
+            } else if (pu === 'bomb') {
+                playSound('bomb');
+                spawnFloatingText(x, y, "MELEDAK!", "#ef4444");
+                spawnParticles(x, y, "#facc15", 30, 2);
+                spawnParticles(x, y, "#ef4444", 30, 2);
+            } else if (pu === 'lightning') {
+                spawnFloatingText(x, y, "PETIR!", "#a855f7");
+                // Eksekusi petir dipindah ke luar loop untuk menghindari error splice saat iterasi
+            }
+        }
+
+        function executeLightning() {
+            // Hancurkan 5 bola secara acak dari jalur
+            if (balls.length === 0) return;
+            let targets = [];
+            for (let i = 0; i < balls.length; i++) targets.push(i);
+            targets.sort(() => Math.random() - 0.5); // Acak urutan
+            
+            // Ambil maksimal 5 bola, lalu urutkan dari index terbesar agar aman saat di-splice
+            let toDestroy = targets.slice(0, Math.min(5, targets.length)).sort((a,b) => b - a);
+            
+            toDestroy.forEach(idx => {
+                if(idx < balls.length && balls[idx]) {
+                    let b = balls[idx];
+                    spawnParticles(b.x, b.y, b.color, 15, 1.5);
+                    spawnFloatingText(b.x, b.y, "ZAP!", "#fef08a");
+                    score += 15;
+                    balls.splice(idx, 1);
+                }
+            });
+            updateUI();
+        }
+
+        function update() {
+            if (state !== 'PLAY') return;
+
+            if (muzzleFlash > 0) muzzleFlash--; // Kurangi timer kilat tembakan
+
+            // Powerups Timers
+            if (activeEffects.slowTimer > 0) activeEffects.slowTimer--;
+            if (activeEffects.reverseTimer > 0) activeEffects.reverseTimer--;
+
+            // Hitung kecepatan berdasarkan powerup
+            let currentSpeed = baseSpeed;
+            let isReversing = false;
+            if (activeEffects.reverseTimer > 0) {
+                currentSpeed = -2; // Mundur!
+                isReversing = true;
+            } else if (activeEffects.slowTimer > 0) {
+                currentSpeed = baseSpeed * 0.25; // Lambat
+            }
+
+            // Spawn Bola Baru (jangan spawn jika sedang reverse, agar tidak menumpuk)
+            if (ballsToSpawn > 0 && !isReversing) {
+                if (balls.length === 0 || balls[balls.length - 1].dist > ballRadius * 2.2) {
+                    let pu = null;
+                    if (Math.random() < 0.08) pu = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
+                    balls.push({ dist: 0, color: getValidColor(), powerup: pu, x: pathPoints[0].x, y: pathPoints[0].y });
+                    ballsToSpawn--;
+                }
+            }
+
+            // Update Efek
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.life -= 0.03;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                let ft = floatingTexts[i];
+                ft.y -= 1.5; ft.life -= 0.02;
+                if (ft.life <= 0) floatingTexts.splice(i, 1);
+            }
+
+            // Pergerakan Kereta Bola
+            if (balls.length > 0) {
+                balls[0].dist += currentSpeed;
+                if (balls[0].dist < 0) balls[0].dist = 0; // Jangan keluar jalur saat mundur
+            }
+
+            matchQueue.clear();
+
+            for (let i = 1; i < balls.length; i++) {
+                let targetDist = balls[i - 1].dist - ballRadius * 2;
+                
+                if (isReversing) {
+                    // Jika mundur, bola belakang dipaksa mengikuti yang di depan
+                    if (balls[i].dist > targetDist) balls[i].dist = targetDist;
+                } else {
+                    // Maju normal (Gap Closing)
+                    if (balls[i].dist < targetDist) {
+                        let catchUpSpeed = baseSpeed * 6;
+                        balls[i].dist += catchUpSpeed;
+                        
+                        if (balls[i].dist >= targetDist) {
+                            balls[i].dist = targetDist;
+                            if (balls[i].color === balls[i - 1].color) matchQueue.add(i - 1);
+                        }
+                    } else if (balls[i].dist > targetDist) {
+                        balls[i].dist = targetDist; // Terdorong mundur oleh tembakan
+                    }
+                }
+            }
+
+            for (let b of balls) {
+                let p = getPosOnPath(b.dist);
+                b.x = p.x; b.y = p.y;
+            }
+
+            // Peluru dan Tumbukan
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.x += b.vx; b.y += b.vy;
+
+                if (b.x < 0 || b.x > width || b.y < 0 || b.y > height) {
+                    bullets.splice(i, 1);
+                    comboMultiplier = 1; 
+                    continue;
+                }
+
+                let hitIdx = -1;
+                for (let j = 0; j < balls.length; j++) {
+                    if (Math.hypot(b.x - balls[j].x, b.y - balls[j].y) < ballRadius * 1.9) {
+                        hitIdx = j; break;
+                    }
+                }
+
+                if (hitIdx !== -1) {
+                    let approxDist = getApproxPathDist(b.x, b.y);
+                    let insertIdx = 0;
+                    while (insertIdx < balls.length && balls[insertIdx].dist > approxDist) insertIdx++;
+
+                    balls.splice(insertIdx, 0, { dist: approxDist, color: b.color, powerup: null, x: b.x, y: b.y });
+                    for (let k = insertIdx + 1; k < balls.length; k++) balls[k].dist -= ballRadius * 2.1;
+
+                    bullets.splice(i, 1);
+                    checkMatch(insertIdx, true);
+                }
+            }
+
+            // Eksekusi Kombo Beruntun
+            let combos = Array.from(matchQueue).sort((a, b) => b - a);
+            for (let idx of combos) checkMatch(idx, false);
+
+            // Kondisi Kalah/Menang
+            if (balls.length > 0 && balls[0].dist >= totalPathDist) {
+                state = 'OVER';
+                playSound('over');
+                document.getElementById('pauseBtn').classList.add('hidden');
+                document.getElementById('gameOverModal').classList.remove('hidden');
+                saveProgressCloud();
+                updateUI();
+            }
+            
+            if (balls.length === 0 && ballsToSpawn === 0) {
+                state = 'WIN';
+                document.getElementById('pauseBtn').classList.add('hidden');
+                document.getElementById('winModal').classList.remove('hidden');
+                saveProgressCloud();
+            }
+            
+            // Refill Peluru Logika Terakhir
+            if (balls.length > 0 && ballsToSpawn === 0) {
+               const activeBoardColors = [...new Set(balls.map(b=>b.color))];
+               if(activeBoardColors.length > 0) {
+                   if(!activeBoardColors.includes(currentBulletColor)) currentBulletColor = getValidColor();
+                   if(!activeBoardColors.includes(nextBulletColor)) nextBulletColor = getValidColor();
+               }
+            }
+        }
+
+        function executeBomb(centerIdx) {
+            if (centerIdx < 0 || centerIdx >= balls.length) return;
+            let radius = 3; // Menghancurkan 3 ke depan dan 3 ke belakang
+            let bStart = Math.max(0, centerIdx - radius);
+            let bEnd = Math.min(balls.length - 1, centerIdx + radius);
+            let bCount = bEnd - bStart + 1;
+            
+            let pts = bCount * 20;
+            score += pts;
+            
+            let lightningTriggered = false;
+
+            for(let i=bStart; i<=bEnd; i++){
+                if (balls[i]) {
+                    spawnParticles(balls[i].x, balls[i].y, balls[i].color);
+                    // Trigger chain powerup jika yang hancur karena bom juga punya powerup!
+                    if(balls[i].powerup && balls[i].powerup !== 'bomb') {
+                        triggerPowerup(balls[i].powerup, balls[i].x, balls[i].y);
+                        if (balls[i].powerup === 'lightning') lightningTriggered = true;
+                    }
+                }
+            }
+            balls.splice(bStart, bCount);
+            
+            if (lightningTriggered) executeLightning();
+        }
+
+        function checkMatch(idx, isDirectHit) {
+            if (idx < 0 || idx >= balls.length) return;
+            let color = balls[idx].color;
+            let start = idx, end = idx;
+            
+            while (start > 0 && balls[start - 1].color === color && Math.abs(balls[start - 1].dist - balls[start].dist) < ballRadius * 2.5) start--;
+            while (end < balls.length - 1 && balls[end + 1].color === color && Math.abs(balls[end].dist - balls[end + 1].dist) < ballRadius * 2.5) end++;
+            
+            let count = end - start + 1;
+            if (count >= 3) {
+                if (!isDirectHit) comboMultiplier++;
+                else comboMultiplier = 1;
+
+                playSound(comboMultiplier > 1 ? 'combo' : 'match');
+
+                let pts = count * 10 * comboMultiplier;
+                score += pts;
+                
+                let midIdx = Math.floor((start + end) / 2);
+                let textX = balls[midIdx].x; let textY = balls[midIdx].y;
+                
+                // Cek Powerups dalam grup yang cocok
+                let bombTriggered = false;
+                let bombIdx = -1;
+                let lightningTriggered = false;
+
+                for (let i = start; i <= end; i++) {
+                    if (balls[i]) {
+                        spawnParticles(balls[i].x, balls[i].y, balls[i].color);
+                        if (balls[i].powerup) {
+                            if (balls[i].powerup === 'bomb') {
+                                bombTriggered = true;
+                                bombIdx = i;
+                            } else if (balls[i].powerup === 'lightning') {
+                                lightningTriggered = true;
+                            }
+                            triggerPowerup(balls[i].powerup, balls[i].x, balls[i].y);
+                        }
+                    }
+                }
+                
+                spawnFloatingText(textX, textY, `+${pts}${comboMultiplier>1?' (x'+comboMultiplier+')':''}`, color);
+
+                if (bombTriggered) {
+                    executeBomb(bombIdx); // Bomb akan handle splice
+                } else {
+                    balls.splice(start, count); // Hapus normal
+                }
+
+                if (lightningTriggered) {
+                    executeLightning();
+                }
+
+                updateUI();
+            } else if (isDirectHit) {
+                comboMultiplier = 1;
+            }
+        }
+
+        // --- KONTROL PEMAIN ---
+        function updateAim(clientX, clientY) {
+            if (state !== 'PLAY') return;
+            shooterAngle = Math.atan2(clientY - cy, clientX - cx);
+        }
+
+        function fire() {
+            if (state !== 'PLAY') return;
+            playSound('shoot');
+            muzzleFlash = 5; // Nyalakan kilat tembakan (Muzzle Flash)
+            let bulletSpeed = Math.max(18, ballRadius * 1.2); 
+            
+            bullets.push({
+                x: cx + Math.cos(shooterAngle) * (ballRadius * 2.5),
+                y: cy + Math.sin(shooterAngle) * (ballRadius * 2.5),
+                vx: Math.cos(shooterAngle) * bulletSpeed,
+                vy: Math.sin(shooterAngle) * bulletSpeed,
+                color: currentBulletColor
+            });
+            
+            currentBulletColor = nextBulletColor;
+            nextBulletColor = getValidColor();
+        }
+
+        window.addEventListener('mousemove', (e) => updateAim(e.clientX, e.clientY));
+        window.addEventListener('mousedown', (e) => {
+            if (audioCtx.state === 'suspended' && !isMuted) audioCtx.resume();
+            if(e.target === canvas) { updateAim(e.clientX, e.clientY); fire(); }
+        });
+        window.addEventListener('touchmove', (e) => {
+            if(e.target === canvas) { e.preventDefault(); updateAim(e.touches[0].clientX, e.touches[0].clientY); }
+        }, { passive: false });
+        window.addEventListener('touchstart', (e) => {
+            if (audioCtx.state === 'suspended' && !isMuted) audioCtx.resume();
+            if(e.target === canvas) { e.preventDefault(); updateAim(e.touches[0].clientX, e.touches[0].clientY); fire(); }
+        }, { passive: false });
+
+        // --- RENDER VISUAL ---
+        function draw() {
+            let bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(width, height));
+            bgGrad.addColorStop(0, '#1f2937'); // Inner glow (gray-800)
+            bgGrad.addColorStop(1, '#030712'); // Dark outer (gray-950)
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, width, height);
+
+            if (pathPoints.length > 0) ctx.drawImage(pathCanvas, 0, 0);
+
+            let offset = ballRadius + 2;
+            for (let b of balls) {
+                let key = b.color + (b.powerup ? '_' + b.powerup : '');
+                if (ballCanvases[key]) ctx.drawImage(ballCanvases[key], b.x - offset, b.y - offset);
+            }
+            for (let b of bullets) {
+                // Gambar Jejak Peluru (Bullet Trail)
+                ctx.beginPath();
+                ctx.moveTo(b.x, b.y);
+                ctx.lineTo(b.x - b.vx * 1.5, b.y - b.vy * 1.5);
+                ctx.strokeStyle = b.color;
+                ctx.lineWidth = ballRadius;
+                ctx.lineCap = 'round';
+                ctx.globalAlpha = 0.4;
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+
+                if (ballCanvases[b.color]) ctx.drawImage(ballCanvases[b.color], b.x - offset, b.y - offset);
+            }
+
+            for (let p of particles) {
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, ballRadius * 0.3, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Gambar Overlay Efek Cuaca/Powerup
+            if (activeEffects.slowTimer > 0) {
+                ctx.fillStyle = `rgba(34, 211, 238, ${Math.min(0.15, activeEffects.slowTimer / 60)})`; // Frost Overlay
+                ctx.fillRect(0, 0, width, height);
+            }
+            if (activeEffects.reverseTimer > 0) {
+                ctx.fillStyle = `rgba(250, 204, 21, ${Math.min(0.1, activeEffects.reverseTimer / 30)})`; // Yellow Alert Overlay
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            drawShooter();
+
+            ctx.textAlign = 'center';
+            ctx.font = `bold ${ballRadius}px Arial`;
+            for (let ft of floatingTexts) {
+                ctx.globalAlpha = Math.max(0, ft.life);
+                ctx.fillStyle = '#000'; ctx.fillText(ft.text, ft.x + 2, ft.y + 2); 
+                ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y);
+            }
+            ctx.globalAlpha = 1.0;
+        }
+
+        function drawShooter() {
+            ctx.save();
+            ctx.translate(cx, cy);
+            
+            // Draw a soft glowing aura behind shooter
+            let glow = ctx.createRadialGradient(0, 0, ballRadius, 0, 0, ballRadius * 3.5);
+            glow.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+            glow.addColorStop(1, 'rgba(16, 185, 129, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath(); ctx.arc(0, 0, ballRadius * 3.5, 0, Math.PI * 2); ctx.fill();
+
+            ctx.rotate(shooterAngle);
+            let r = ballRadius;
+
+            // --- DESAIN KATAK MISTIS (MYSTICAL FROG) ---
+            
+            // Kaki Katak Belakang
+            ctx.fillStyle = '#065f46'; // Hijau gelap
+            ctx.beginPath(); ctx.ellipse(-r*1.1, r*1.3, r*0.8, r*1.4, Math.PI/4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(-r*1.1, -r*1.3, r*0.8, r*1.4, -Math.PI/4, 0, Math.PI*2); ctx.fill();
+
+            // Badan Katak
+            ctx.fillStyle = '#10b981'; // Hijau Zamrud
+            ctx.beginPath(); ctx.ellipse(0, 0, r*1.6, r*1.4, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = '#047857'; ctx.stroke();
+
+            // Motif punggung (Bintik)
+            ctx.fillStyle = '#34d399';
+            ctx.beginPath(); ctx.arc(-r*0.6, 0, r*0.25, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-r*0.8, r*0.6, r*0.2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-r*0.8, -r*0.6, r*0.2, 0, Math.PI*2); ctx.fill();
+
+            // Mata Menonjol
+            ctx.fillStyle = '#065f46'; // Soket mata
+            ctx.beginPath(); ctx.arc(r*0.5, -r*1.2, r*0.6, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(r*0.5, r*1.2, r*0.6, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fde047'; // Mata kuning menyala
+            ctx.beginPath(); ctx.arc(r*0.6, -r*1.2, r*0.4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(r*0.6, r*1.2, r*0.4, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000'; // Pupil (Menghadap arah tembak)
+            ctx.beginPath(); ctx.arc(r*0.8, -r*1.2, r*0.2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(r*0.8, r*1.2, r*0.2, 0, Math.PI*2); ctx.fill();
+
+            // Mulut Terbuka / Tempat Peluru Keluar
+            ctx.fillStyle = '#022c22';
+            ctx.beginPath(); ctx.arc(r*1.1, 0, r*0.7, 0, Math.PI*2); ctx.fill();
+
+            // Efek Kilat Tembakan (Muzzle Flash Flare)
+            if (muzzleFlash > 0) {
+                ctx.fillStyle = 'rgba(253, 224, 71, 0.9)'; // Kuning kilat
+                ctx.beginPath();
+                ctx.moveTo(r*1.8, 0);
+                ctx.lineTo(r*3, -r*0.8);
+                ctx.lineTo(r*3.5, 0);
+                ctx.lineTo(r*3, r*0.8);
+                ctx.fill();
+            }
+
+            let offset = ballRadius + 2;
+            if (state === 'PLAY' && ballCanvases[currentBulletColor]) {
+                // Posisi peluru di dalam mulut
+                ctx.drawImage(ballCanvases[currentBulletColor], r*0.4 - offset, -offset);
+            }
+
+            if (state === 'PLAY' && ballCanvases[nextBulletColor]) {
+                // Indikator next bola (Berada di atas punggung katak)
+                ctx.beginPath();
+                ctx.arc(-r*0.5, 0, r*0.6, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fill(); // Bayangan slot punggung
+                let nextOffset = (ballRadius * 0.45) + 2;
+                ctx.drawImage(ballCanvases[nextBulletColor], -r*0.5 - nextOffset, -nextOffset, nextOffset*2, nextOffset*2);
+            }
+
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        resize();
+        gameLoop();
+        
+    </script>
+</body>
+</html>
